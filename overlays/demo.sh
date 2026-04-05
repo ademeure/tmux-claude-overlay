@@ -11,8 +11,8 @@ bus_init
 # Render
 # ============================================================
 render() {
+    layout_init  # Detect size FIRST (tput is wrong in popups)
     [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
-    layout_init
 
     widget_banner "Terminal Dashboard" "$(sys_datetime)"
 
@@ -223,8 +223,8 @@ _render_narrow() {
 # Subviews
 # ============================================================
 view_git_log() {
-    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
     layout_init
+    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
     widget_banner "Git Log"
     layout_spacer
     widget_card_begin "Commit Graph (last 20)"
@@ -240,8 +240,8 @@ view_git_log() {
 }
 
 view_sessions() {
-    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
     layout_init
+    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
     widget_banner "Tmux Sessions"
     layout_spacer
     local _all; _all=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)

@@ -34,15 +34,16 @@ overlay_init() {
     # Hide cursor
     cursor_hide
 
-    # Clear and fill background
+    # Detect screen size FIRST (must happen before fill_background,
+    # because tput returns wrong values inside tmux popups)
+    layout_init
+
+    # Clear and fill background using correct dimensions
     if [[ -n "$C_BG_PRIMARY" ]]; then
         fill_background
     else
         screen_clear
     fi
-
-    # Initialize layout
-    layout_init
 
     # Note: overlays handle their own header/banner in their render function.
     # overlay_init just sets up the terminal — no header drawn here.

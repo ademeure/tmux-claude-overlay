@@ -38,11 +38,15 @@ layout_init() {
     SCREEN_ROWS=0
 
     # Method 1: stty (queries actual PTY — works correctly in popups)
-    local stty_size
+    local stty_size stty_r stty_c
     stty_size=$(stty size 2>/dev/null || echo "")
-    if [[ -n "$stty_size" && "$stty_size" != *"0"* ]]; then
-        SCREEN_ROWS=$(echo "$stty_size" | awk '{print $1}')
-        SCREEN_COLS=$(echo "$stty_size" | awk '{print $2}')
+    if [[ -n "$stty_size" ]]; then
+        stty_r=$(echo "$stty_size" | awk '{print $1}')
+        stty_c=$(echo "$stty_size" | awk '{print $2}')
+        if [[ $stty_r -gt 0 && $stty_c -gt 0 ]] 2>/dev/null; then
+            SCREEN_ROWS=$stty_r
+            SCREEN_COLS=$stty_c
+        fi
     fi
 
     # Method 2: tput (fallback — wrong in popups but better than nothing)

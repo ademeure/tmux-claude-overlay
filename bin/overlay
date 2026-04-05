@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# tmux-claude-overlay: Main CLI launcher
+# Launch overlays as tmux popups with configurable size, theme, and position.
+#
+# Usage:
+#   overlay list                        List available overlays
+#   overlay launch <name> [options]     Launch an overlay in a tmux popup
+#   overlay run <name> [options]        Run an overlay directly (no popup)
+#   overlay themes                      List available themes
+#
+# Options:
+#   --theme <name>      Theme (default: catppuccin)
+#   --width <w>         Popup width (default: 80%, can be % or columns)
+#   --height <h>        Popup height (default: 80%, can be % or rows)
+#   --style <s>         Box style: round, sharp, double, heavy (default: round)
+#   --border            Show tmux popup border (default: yes)
+#   --no-border         Hide tmux popup border
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OVERLAY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+export OVERLAY_ROOT
+
+# Defaults
+THEME="${OVERLAY_THEME:-catppuccin}"
+WIDTH="80%"
+HEIGHT="80%"
+STYLE="round"
+BORDER="-B"  # tmux popup border style
+
+# Parse global options that appear after the subcommand
+parse_options() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --theme)     THEME="$2";  shift 2 ;;
+            --width)     WIDTH="$2";  shift 2 ;;
+            --height)    HEIGHT="$2"; shift 2 ;;
+            --style)     STYLE="$2";  shift 2 ;;
+            --border)    BORDER="-B"; shift ;;
+            --no-border) BORDER="";   shift ;;
+            *)           shift ;;
+        esac
+    done
+}
+
+cmd_list() {
+    echo "Available overlays:"
+    echo ""
+    source "${OVERLAY_ROOT}/lib/overlay.sh"
+    overlay_list
+    echo ""
+    echo "Launch with: overlay launch <name>"
+}
+
+cmd_themes() {
+    source "${OVERLAY_ROOT}/lib/colors.sh"
+    source "${OVERLAY_ROOT}/lib/theme.sh"
+    echo "Available themes:"
+    echo ""
+    for t in $(theme_list); do
+        echo "  $t"
+    done
+    echo ""
+    echo "Use with: overlay launch <name> --theme <theme>"
+}
+
+cmd_launch() {
+    local name="$1"; shift
+    parse_options "$@"
+
+    local script="${OVERLAY_ROOT}/overlays/${name}.sh"
+    if [[ ! -f "$script" ]]; then
+        echo "Error: overlay '$name' not found" >&2
+        echo "Run 'overlay list' to see available overlays." >&2
+        exit 1
+    fi
+
+    local popup_args=(-w "$WIDTH" -h "$HEIGHT" -E)
+    [[ -n "$BORDER" ]] && popup_args+=("$BORDER")
+
+    tmux display-popup "${popup_args[@]}" \
+        "OVERLAY_THEME='${THEME}' OVERLAY_STYLE='${STYLE}' OVERLAY_ROOT='${OVERLAY_ROOT}' bash '${script}'"
+}
+
+cmd_run() {
+    local name="$1"; shift
+    parse_options "$@"
+
+    local script="${OVERLAY_ROOT}/overlays/${name}.sh"
+    if [[ ! -f "$script" ]]; then
+        echo "Error: overlay '$name' not found" >&2
+        exit 1
+    fi
+
+    export OVERLAY_THEME="$THEME"
+    export OVERLAY_STYLE="$STYLE"
+    bash "$script"
+}
+
+# Screenshot shortcut
+cmd_screenshot() {
+    bash "${OVERLAY_ROOT}/tools/screenshot.sh" "$@"
+}
+
+# Main dispatch
+case "${1:-help}" in
+    list|ls)       cmd_list ;;
+    launch|open)   shift; cmd_launch "$@" ;;
+    run)           shift; cmd_run "$@" ;;
+    themes)        cmd_themes ;;
+    screenshot|ss) shift; cmd_screenshot "$@" ;;
+    help|-h|--help)
+        echo "tmux-claude-overlay — Beautiful terminal overlay framework"
+        echo ""
+        echo "Usage:"
+        echo "  overlay list                     List available overlays"
+        echo "  overlay launch <name> [opts]     Launch in tmux popup"
+        echo "  overlay run <name> [opts]        Run directly (no popup)"
+        echo "  overlay themes                   List available themes"
+        echo "  overlay screenshot <cmd> [args]  Screenshot tools"
+        echo ""
+        echo "Options:"
+        echo "  --theme <name>       Theme (catppuccin, tokyonight, dracula, nord, minimal)"
+        echo "  --width <w>          Popup width (default: 80%)"
+        echo "  --height <h>         Popup height (default: 80%)"
+        echo "  --style <s>          Box style (round, sharp, double, heavy)"
+        ;;
+    *)
+        echo "Unknown command: $1. Run 'overlay help' for usage." >&2
+        exit 1
+        ;;
+esac

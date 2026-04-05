@@ -175,9 +175,13 @@ layout_min_height() {
 layout_footer() {
     local left="$1" right="${2:-}"
 
-    # Always draw on the very last two rows
-    local bar_row=$((SCREEN_ROWS - 1))
-    local sep_row=$((SCREEN_ROWS - 2))
+    # Draw footer at the bottom, but no more than 2 rows below content.
+    # This avoids a huge gap when content is short.
+    local min_sep=$((_LAYOUT_CURSOR_ROW + 1))
+    local max_sep=$((SCREEN_ROWS - 2))
+    local sep_row=$min_sep
+    [[ $sep_row -gt $max_sep ]] && sep_row=$max_sep
+    local bar_row=$((sep_row + 1))
 
     # Separator line
     cursor_to "$sep_row" 1

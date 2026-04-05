@@ -1,0 +1,40 @@
+
+
+                                              Terminal Dashboard
+                                             Sun Apr 05, 14:18:09
+
+  Branch                    Sessions                  Panes                     Load
+  main                      27                        1                         5.36 5.35 4.92
+
+  ╭─ Git ────────────────────────────────────────────╮ ╭─ System ─────────────────────────────────────────╮
+  │ Status         ◐ 5 changed                       │ │ Directory      ~/tmux-claude-overlay             │
+  │ Last commit    7 minutes ago                     │ │ Hostname       Arouns-MacBook-Pro                │
+  │ Remote         ↑0 ↓0                             │ │ Uptime         up 1 day                          │
+  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │ │ Disk           2%                                │
+  │ 501aec4 Add widget library, message bus, and …   │ │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+  │ 647e3f0 Initial framework: overlay system wit…   │ │ Active Panes                                     │
+  │                                                  │ │ 0: zsh 110x40 (active)                           │
+  ╰──────────────────────────────────────────────────╯ ╰──────────────────────────────────────────────────╯
+
+  ╭─ Sessions ─────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ _lab_dracula               1 win                                                                       │
+  │ _lab_nord                  1 win                                                                       │
+  │ _lab_tokyonight            1 win                                                                       │
+  │ local-18                   1 win ✦                                                                     │
+  │ local-19-cs-5c606ec4       1 win                                                                       │
+  │ local-23                   1 win                                                                       │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [r]efresh  [g]it log  [s]essions  [t]heme  [?] help  [q]uit                                    tokyonight
+
+
+
+
+
+
+
+
+
+
+

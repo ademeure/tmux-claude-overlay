@@ -101,6 +101,7 @@ widget_card_begin() {
     _CARD_START_ROW=$_LAYOUT_CURSOR_ROW
     _CARD_COL=$_LAYOUT_CURSOR_COL
     _CARD_WIDTH=$width
+    _CARD_INNER=$((width - 4))  # content area (between │ + space ... space + │)
 
     # Draw top border with title
     cursor_to "$_LAYOUT_CURSOR_ROW" "$_CARD_COL"
@@ -121,26 +122,93 @@ widget_card_begin() {
 
     layout_advance 1
 
-    # Indent content inside card
+    # Indent content inside card (leave 2 cols for │ + space on each side)
     _LAYOUT_CURSOR_COL=$((_CARD_COL + 2))
+}
+
+# Print inside a card, padding to exact card width. Use this instead of erase_eol.
+# Usage: card_print "formatted content"
+# Prints at current cursor position, pads with spaces to card inner width.
+card_print() {
+    local content="$1"
+    local vlen
+    vlen=$(visible_len "$content")
+    local pad=$((_CARD_INNER - vlen))
+    [[ $pad -lt 0 ]] && pad=0
+    printf '%s%*s' "$content" "$pad" ''
+}
+
+# Card-aware key-value line. Properly padded.
+# Usage: card_kv "Label" "Value" [value_color]
+card_kv() {
+    local label="$1" value="$2" vcolor="${3:-$C_TEXT}"
+    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+    local line
+    line=$(printf '%s%-14s%s %s%s%s' "$C_MUTED" "$label" "$RST" "$vcolor" "$value" "$RST")
+    card_print "$line"
+    layout_advance 1
+}
+
+# Card-aware dot separator. Uses thin line chars for a subtler look.
+card_dots() {
+    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+    printf '%s' "$THEME_BORDER"
+    local i
+    for ((i=0; i<_CARD_INNER; i++)); do printf '╌'; done
+    printf '%s' "$RST"
+    layout_advance 1
+}
+
+# Card-aware text line.
+# Usage: card_text "text" [color]
+card_text() {
+    local text="$1" color="${2:-$C_TEXT}"
+    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+    local line
+    line=$(printf '%s%s%s' "$color" "$text" "$RST")
+    card_print "$line"
+    layout_advance 1
+}
+
+# Card-aware status line.
+card_status() {
+    local label="$1" text="$2" status="${3:-info}"
+    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+    local status_str
+    case "$status" in
+        ok|success|clean)  status_str=$(printf '%s● %s%s' "$C_SUCCESS" "$text" "$RST") ;;
+        warn|warning|dirty) status_str=$(printf '%s◐ %s%s' "$C_WARNING" "$text" "$RST") ;;
+        error|fail)        status_str=$(printf '%s✖ %s%s' "$C_ERROR" "$text" "$RST") ;;
+        info)              status_str=$(printf '%s◆ %s%s' "$C_PRIMARY" "$text" "$RST") ;;
+        *)                 status_str=$(printf '%s○ %s%s' "$C_MUTED" "$text" "$RST") ;;
+    esac
+    local line
+    line=$(printf '%s%-14s%s %s' "$C_MUTED" "$label" "$RST" "$status_str")
+    card_print "$line"
+    layout_advance 1
 }
 
 widget_card_end() {
     _LAYOUT_CURSOR_COL=$_CARD_COL
     local width=$_CARD_WIDTH
+    local inner=$((width - 2))
 
-    # Draw side borders for all content rows
+    # Draw side borders and fill interior for all content rows
     local row
     for ((row=_CARD_START_ROW + 1; row < _LAYOUT_CURSOR_ROW; row++)); do
+        # Left border
         cursor_to "$row" "$_CARD_COL"
         printf '%s%s%s' "$THEME_BORDER_ACTIVE" "$_BOX_V" "$RST"
+        # Fill interior to exact width (overwrite any short lines)
+        # Move to right border position and draw it
         cursor_to "$row" $((_CARD_COL + width - 1))
         printf '%s%s%s' "$THEME_BORDER_ACTIVE" "$_BOX_V" "$RST"
+        # Clear anything beyond the right border
+        printf '%s' "$RST"
     done
 
     # Bottom border
     cursor_to "$_LAYOUT_CURSOR_ROW" "$_CARD_COL"
-    local inner=$((width - 2))
     printf '%s%s' "$THEME_BORDER_ACTIVE" "$_BOX_BL"
     local i
     for ((i=0; i<inner; i++)); do printf '%s' "$_BOX_H"; done

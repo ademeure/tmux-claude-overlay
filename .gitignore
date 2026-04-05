@@ -3,3 +3,4 @@ screenshots/*.txt
 screenshots/*.html
 !screenshots/.gitkeep
 .DS_Store
+screenshots/iterations/*.png

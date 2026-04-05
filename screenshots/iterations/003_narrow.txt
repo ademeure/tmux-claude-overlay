@@ -1,0 +1,30 @@
+
+
+                               Terminal Dashboard
+                              Sun Apr 05, 14:18:21
+
+  Branch             Sessions           Panes              Load
+  main               25                 1                  5.39 5.36 4.93
+
+  ╭─ Git ────────────────────────────────────────────────────────────────────╮
+  │ Status         ◐ 5 changed                                               │
+  │ Last commit    8 minutes ago                                             │
+  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+  │ 501aec4 Add widget library, message bus, and major visual overhaul       │
+  │ 647e3f0 Initial framework: overlay system with themes, drawing, layou…   │
+  ╰──────────────────────────────────────────────────────────────────────────╯
+
+  ╭─ System ─────────────────────────────────────────────────────────────────╮
+  │ Directory      ~/tmux-claude-overlay                                     │
+  │ Uptime         up 1 day                                                  │
+  │ Load           5.39 5.36 4.93                                            │
+  ╰──────────────────────────────────────────────────────────────────────────╯
+
+  ╭─ Sessions ───────────────────────────────────────────────────────────────╮
+  │ _lab_narrow                1 win                                         │
+  │ local-18                   1 win ✦                                       │
+  │ local-19-cs-5c606ec4       1 win                                         │
+  │ local-23                   1 win                                         │
+  ────────────────────────────────────────────────────────────────────────────
+  [r]efresh  [g]it log  [s]essions  [t]heme  [?] help  [q]uit      catppuccin
+  ╰──────────────────────────────────────────────────────────────────────────╯

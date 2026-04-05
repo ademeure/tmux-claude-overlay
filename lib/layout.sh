@@ -25,28 +25,27 @@ _LAYOUT_CURSOR_COL=1
 
 # Initialize/refresh screen dimensions
 layout_init() {
-    # Try multiple methods to detect terminal size.
-    # tput can return wrong values in subshells; tmux pane info is authoritative.
+    # Detect terminal size. This is tricky because different methods fail
+    # in different contexts:
+    #   - tput: returns WRONG values in tmux popups and subshells
+    #   - tmux display-message: returns PARENT pane size in popups (!)
+    #   - stty size: queries the actual PTY via ioctl — most reliable
+    #
+    # Order: stty (actual PTY) → tput → hardcoded fallback
+    # We deliberately skip tmux display-message because it returns the
+    # parent pane's dimensions inside popups, causing layout corruption.
     SCREEN_COLS=0
     SCREEN_ROWS=0
 
-    # Method 1: tmux (most reliable when running inside tmux)
-    if [[ -n "${TMUX:-}" ]]; then
-        SCREEN_COLS=$(tmux display-message -p '#{pane_width}' 2>/dev/null || echo 0)
-        SCREEN_ROWS=$(tmux display-message -p '#{pane_height}' 2>/dev/null || echo 0)
+    # Method 1: stty (queries actual PTY — works correctly in popups)
+    local stty_size
+    stty_size=$(stty size 2>/dev/null || echo "")
+    if [[ -n "$stty_size" && "$stty_size" != *"0"* ]]; then
+        SCREEN_ROWS=$(echo "$stty_size" | awk '{print $1}')
+        SCREEN_COLS=$(echo "$stty_size" | awk '{print $2}')
     fi
 
-    # Method 2: stty (works on real terminals)
-    if [[ $SCREEN_COLS -eq 0 || $SCREEN_ROWS -eq 0 ]]; then
-        local stty_size
-        stty_size=$(stty size 2>/dev/null || echo "")
-        if [[ -n "$stty_size" ]]; then
-            SCREEN_ROWS=$(echo "$stty_size" | awk '{print $1}')
-            SCREEN_COLS=$(echo "$stty_size" | awk '{print $2}')
-        fi
-    fi
-
-    # Method 3: tput (fallback)
+    # Method 2: tput (fallback — wrong in popups but better than nothing)
     if [[ $SCREEN_COLS -eq 0 || $SCREEN_ROWS -eq 0 ]]; then
         SCREEN_ROWS=$(tput lines 2>/dev/null || echo 24)
         SCREEN_COLS=$(tput cols  2>/dev/null || echo 80)

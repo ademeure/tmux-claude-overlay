@@ -25,8 +25,33 @@ _LAYOUT_CURSOR_COL=1
 
 # Initialize/refresh screen dimensions
 layout_init() {
-    SCREEN_ROWS=$(tput lines 2>/dev/null || echo 24)
-    SCREEN_COLS=$(tput cols  2>/dev/null || echo 80)
+    # Try multiple methods to detect terminal size.
+    # tput can return wrong values in subshells; tmux pane info is authoritative.
+    SCREEN_COLS=0
+    SCREEN_ROWS=0
+
+    # Method 1: tmux (most reliable when running inside tmux)
+    if [[ -n "${TMUX:-}" ]]; then
+        SCREEN_COLS=$(tmux display-message -p '#{pane_width}' 2>/dev/null || echo 0)
+        SCREEN_ROWS=$(tmux display-message -p '#{pane_height}' 2>/dev/null || echo 0)
+    fi
+
+    # Method 2: stty (works on real terminals)
+    if [[ $SCREEN_COLS -eq 0 || $SCREEN_ROWS -eq 0 ]]; then
+        local stty_size
+        stty_size=$(stty size 2>/dev/null || echo "")
+        if [[ -n "$stty_size" ]]; then
+            SCREEN_ROWS=$(echo "$stty_size" | awk '{print $1}')
+            SCREEN_COLS=$(echo "$stty_size" | awk '{print $2}')
+        fi
+    fi
+
+    # Method 3: tput (fallback)
+    if [[ $SCREEN_COLS -eq 0 || $SCREEN_ROWS -eq 0 ]]; then
+        SCREEN_ROWS=$(tput lines 2>/dev/null || echo 24)
+        SCREEN_COLS=$(tput cols  2>/dev/null || echo 80)
+    fi
+
     SCREEN_INNER_ROWS=$((SCREEN_ROWS - LAYOUT_PAD_TOP - LAYOUT_PAD_BOTTOM))
     SCREEN_INNER_COLS=$((SCREEN_COLS - LAYOUT_PAD_LEFT - LAYOUT_PAD_RIGHT))
     _LAYOUT_CURSOR_ROW=$((1 + LAYOUT_PAD_TOP))
@@ -149,19 +174,33 @@ layout_min_height() {
 # Usage: layout_footer "left text" ["right text"]
 layout_footer() {
     local left="$1" right="${2:-}"
-    local row=$((SCREEN_ROWS - LAYOUT_PAD_BOTTOM))
 
-    cursor_to "$row" 1
-    printf '%s%s' "$C_BG_SURFACE" "$C_BORDER"
-    printf '%*s' "$SCREEN_COLS" ''  # Fill with bg
-    cursor_to "$row" $((1 + LAYOUT_PAD_LEFT))
-    printf '%s%s%s' "$C_KEY_HINT" "$left" "$RST"
+    # Always draw on the very last two rows
+    local bar_row=$((SCREEN_ROWS - 1))
+    local sep_row=$((SCREEN_ROWS - 2))
+
+    # Separator line
+    cursor_to "$sep_row" 1
+    printf '%s' "$C_BG_PRIMARY"
+    local i
+    for ((i=0; i<SCREEN_COLS; i++)); do printf '%s' " "; done
+    cursor_to "$sep_row" $((1 + LAYOUT_PAD_LEFT))
+    printf '%s' "$THEME_BORDER"
+    for ((i=0; i<SCREEN_INNER_COLS; i++)); do printf '%s' "─"; done
+    printf '%s' "$RST"
+
+    # Footer bar
+    cursor_to "$bar_row" 1
+    printf '%s' "$C_BG_SURFACE"
+    printf '%*s' "$SCREEN_COLS" ''
+    cursor_to "$bar_row" $((1 + LAYOUT_PAD_LEFT))
+    printf '%s%s%s%s' "$C_BG_SURFACE" "$C_KEY_HINT" "$left" "$RST"
 
     if [[ -n "$right" ]]; then
         local right_len
         right_len=$(visible_len "$right")
-        cursor_to "$row" $((SCREEN_COLS - LAYOUT_PAD_RIGHT - right_len))
-        printf '%s%s%s' "$C_MUTED" "$right" "$RST"
+        cursor_to "$bar_row" $((SCREEN_COLS - LAYOUT_PAD_RIGHT - right_len))
+        printf '%s%s%s%s' "$C_BG_SURFACE" "$C_MUTED" "$right" "$RST"
     fi
 }
 

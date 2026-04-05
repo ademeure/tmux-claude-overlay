@@ -1,201 +1,289 @@
 #!/usr/bin/env bash
 # Description: Demo dashboard — showcases the overlay framework
-# A demo overlay that displays session, git, and system info
-# using the full framework (themes, layout, drawing, input).
 
 OVERLAY_ROOT="${OVERLAY_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "${OVERLAY_ROOT}/lib/overlay.sh"
 
-# Apply box style if set
 [[ -n "${OVERLAY_STYLE:-}" ]] && draw_set_style "$OVERLAY_STYLE"
+bus_init
 
 # ============================================================
-# Render function — called on init and resize
+# Helper: render a key-value line at current position
 # ============================================================
+_kv() {
+    local label="$1" value="$2" vcolor="${3:-$C_TEXT}"
+    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+    printf '%s%-14s%s %s%s%s' "$C_MUTED" "$label" "$RST" "$vcolor" "$value" "$RST"
+    erase_eol
+    layout_advance 1
+}
 
+# Dot separator inside a card
+_dots() {
+    local w="${1:-40}"
+    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+    printf '%s' "$THEME_BORDER"
+    local i; for ((i=0; i<w; i++)); do printf '·'; done
+    printf '%s' "$RST"
+    layout_advance 1
+}
+
+# ============================================================
+# Render
+# ============================================================
 render() {
-    # Clear and refill background
-    if [[ -n "$C_BG_PRIMARY" ]]; then
-        fill_background
-    else
-        screen_clear
-    fi
+    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
     layout_init
 
-    # Header
-    layout_header "Terminal Dashboard" "$(sys_datetime)"
+    # Banner
+    widget_banner "Terminal Dashboard" "$(sys_datetime)"
 
-    # ── Session section ──
-    layout_section "SESSION"
-    layout_kv "Session:"     "$(tmux_session_name)" "$C_MUTED" "${BOLD}${C_TEXT}"
-    layout_kv "Window:"      "$(tmux_window_name)"
-    layout_kv "Panes:"       "$(tmux_pane_count)"
-    layout_kv "Sessions:"    "$(tmux_session_count)"
+    # Stat row
+    widget_stat_row \
+        "Branch"   "$(git_branch)" \
+        "Sessions" "$(tmux_session_count)" \
+        "Panes"    "$(tmux_pane_count)" \
+        "Load"     "$(sys_load)"
 
-    layout_spacer
+    # Gather data upfront to avoid subshell issues
+    local _git_dirty _dirty_count _last_commit _git_log _pane_path
+    local _hostname _uptime _disk _pane_info _sess_data
+    local _stash_count _ahead_behind
 
-    # ── Git section ──
-    layout_section "GIT"
-    layout_kv "Branch:" "$(git_branch)" "$C_MUTED" "${BOLD}${C_SECONDARY}"
+    _git_dirty=0; git_is_dirty && _git_dirty=1
+    _dirty_count=$(git_dirty_count)
+    _last_commit=$(git_last_commit_time)
+    _git_log=$(git_log_oneline 5)
+    _stash_count=$(git_stash_count)
+    _ahead_behind=$(git_ahead_behind)
+    _pane_path=$(tmux_pane_path)
+    _pane_path=$(shorten_path "$_pane_path" 36)
+    _hostname=$(sys_hostname)
+    _uptime=$(sys_uptime)
+    _disk=$(sys_disk_usage)
+    _pane_info=$(tmux_list_panes_detail)
+    _sess_data=$(tmux list-sessions -F "#{session_name}|#{session_windows}|#{session_attached}" 2>/dev/null | head -6)
 
-    if git_is_dirty; then
-        local count
-        count=$(git_dirty_count)
-        cursor_to "$(_LAYOUT_ROW=$_LAYOUT_CURSOR_ROW; echo $_LAYOUT_ROW)" "$_LAYOUT_CURSOR_COL"
-        printf '  %s%-16s%s ' "$C_MUTED" "Status:" "$RST"
-        draw_status "warn" "${count} changed files"
-        echo ""
-        layout_advance 1
-    else
+    local bp
+    bp=$(layout_breakpoint)
+
+    if [[ "$bp" == "wide" ]]; then
+        local half=$(( (SCREEN_INNER_COLS - 3) / 2 ))
+        local save_row=$_LAYOUT_CURSOR_ROW
+        local left_col=$_LAYOUT_CURSOR_COL
+        local right_col=$((_LAYOUT_CURSOR_COL + half + 3))
+        local dot_w=$((half - 6))
+
+        # ── Left: Git ──
+        widget_card_begin "Git" "$half"
+
+        if [[ $_git_dirty -eq 1 ]]; then
+            cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+            printf '%s%-14s%s ' "$C_MUTED" "Status" "$RST"
+            draw_status "warn" "${_dirty_count} changed"
+            erase_eol; layout_advance 1
+        else
+            cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+            printf '%s%-14s%s ' "$C_MUTED" "Status" "$RST"
+            draw_status "ok" "clean"
+            erase_eol; layout_advance 1
+        fi
+
+        _kv "Last commit" "$_last_commit"
+        _kv "Remote" "$_ahead_behind" "$C_PRIMARY"
+        [[ "$_stash_count" != "0" ]] && _kv "Stashes" "$_stash_count" "$C_ACCENT"
+
+        _dots "$dot_w"
+
+        if [[ -n "$_git_log" ]]; then
+            while IFS= read -r line; do
+                local hash msg
+                hash=$(echo "$line" | awk '{print $1}')
+                msg=$(echo "$line" | cut -d' ' -f2-)
+                msg=$(truncate_text "$msg" $((half - 16)))
+                cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+                printf '%s%s%s %s%s%s' \
+                    "${BOLD}${C_ACCENT}" "$hash" "$RST" \
+                    "$C_MUTED" "$msg" "$RST"
+                erase_eol; layout_advance 1
+            done <<< "$_git_log"
+        fi
+
+        # Save left content end row (before card_end draws bottom border)
+        local left_content_end=$_LAYOUT_CURSOR_ROW
+
+        # Don't close left card yet — measure right first
+
+        # ── Right: System ──
+        # Temporarily save left state and switch to right column
+        local left_card_start=$_CARD_START_ROW
+        local left_card_col=$_CARD_COL
+        local left_card_w=$_CARD_WIDTH
+
+        _LAYOUT_CURSOR_ROW=$save_row
+        _LAYOUT_CURSOR_COL=$right_col
+
+        widget_card_begin "System" "$half"
+
+        _kv "Directory" "$_pane_path" "$C_PRIMARY"
+        _kv "Hostname" "$_hostname"
+        _kv "Uptime" "$_uptime"
+        _kv "Disk" "$_disk"
+
+        _dots "$dot_w"
+
         cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
-        printf '  %s%-16s%s ' "$C_MUTED" "Status:" "$RST"
-        draw_status "ok" "clean"
-        echo ""
-        layout_advance 1
-    fi
+        printf '%s%sActive Panes%s' "${BOLD}" "$C_MUTED" "$RST"
+        erase_eol; layout_advance 1
 
-    layout_kv "Last commit:" "$(git_last_commit_time)"
+        if [[ -n "$_pane_info" ]]; then
+            while IFS= read -r line; do
+                cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+                printf '%s%s%s' "$C_TEXT" "$line" "$RST"
+                erase_eol; layout_advance 1
+            done <<< "$_pane_info"
+        fi
 
-    layout_spacer
+        local right_content_end=$_LAYOUT_CURSOR_ROW
 
-    # Recent commits
-    local commits
-    commits=$(git_log_oneline 5)
-    if [[ -n "$commits" ]]; then
-        cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
-        printf '  %sRecent commits:%s\n' "$C_MUTED" "$RST"
-        layout_advance 1
+        # Balance: pad the shorter column to match the taller one
+        local target_end=$left_content_end
+        [[ $right_content_end -gt $target_end ]] && target_end=$right_content_end
 
-        while IFS= read -r line; do
-            local hash msg
-            hash=$(echo "$line" | awk '{print $1}')
-            msg=$(echo "$line" | cut -d' ' -f2-)
-            cursor_to "$_LAYOUT_CURSOR_ROW" $((_LAYOUT_CURSOR_COL + 2))
-            printf '%s%s%s %s%s%s\n' "$C_ACCENT" "$hash" "$RST" "$C_MUTED" "$msg" "$RST"
+        # Pad right column
+        while [[ $_LAYOUT_CURSOR_ROW -lt $target_end ]]; do
             layout_advance 1
-        done <<< "$commits"
+        done
+        widget_card_end
+        local right_end=$_LAYOUT_CURSOR_ROW
+
+        # Now close left card, padded to match
+        _CARD_START_ROW=$left_card_start
+        _CARD_COL=$left_card_col
+        _CARD_WIDTH=$left_card_w
+        _LAYOUT_CURSOR_ROW=$target_end
+        _LAYOUT_CURSOR_COL=$left_col
+        widget_card_end
+        local left_end=$_LAYOUT_CURSOR_ROW
+
+        [[ $left_end -gt $right_end ]] && _LAYOUT_CURSOR_ROW=$left_end || _LAYOUT_CURSOR_ROW=$right_end
+        _LAYOUT_CURSOR_COL=$((LAYOUT_PAD_LEFT + 1))
+
+    else
+        # ── Single column ──
+        widget_card_begin "Git"
+        if [[ $_git_dirty -eq 1 ]]; then
+            widget_status_line "Status" "${_dirty_count} changed" "warn"
+        else
+            widget_status_line "Status" "clean" "ok"
+        fi
+        _kv "Last commit" "$_last_commit"
+        widget_commit_list 3
+        widget_card_end
+
+        layout_spacer
+
+        widget_card_begin "System"
+        _kv "Directory" "$_pane_path" "$C_PRIMARY"
+        _kv "Uptime" "$_uptime"
+        _kv "Load" "$(sys_load)"
+        widget_card_end
     fi
 
     layout_spacer
 
-    # ── System section ──
-    layout_section "SYSTEM"
-    local pane_path
-    pane_path=$(tmux_pane_path)
-    layout_kv "Directory:" "${pane_path/#$HOME/\~}" "$C_MUTED" "$C_PRIMARY"
-    layout_kv "Uptime:"    "$(sys_uptime)"
-    layout_kv "Load:"      "$(sys_load)"
-    layout_kv "Disk:"      "$(sys_disk_usage)"
-
-    layout_spacer
-
-    # ── Active panes ──
-    layout_section "ACTIVE PANES"
-    local pane_info
-    pane_info=$(tmux_list_panes_detail)
-    if [[ -n "$pane_info" ]]; then
-        while IFS= read -r line; do
-            layout_print "  $line" "$C_TEXT"
-        done <<< "$pane_info"
+    # ── Sessions card ──
+    widget_card_begin "Sessions"
+    if [[ -n "$_sess_data" ]]; then
+        while IFS='|' read -r sess wins att; do
+            local marker=""
+            [[ "$att" == "1" ]] && marker=" ✦"
+            cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+            printf '%s%-28s%s %s%s win%s%s' \
+                "$C_SECONDARY" "$sess" "$RST" \
+                "$C_MUTED" "$wins" "$C_SUCCESS" "$marker"
+            erase_eol; layout_advance 1
+        done <<< "$_sess_data"
     fi
+    widget_card_end
 
     # Footer
-    local hints
-    hints=$(input_hint_string)
-    layout_footer "$hints" "theme: ${OVERLAY_THEME}"
+    layout_footer "$(input_hint_string)" "$OVERLAY_THEME"
+}
+
+# ============================================================
+# Subviews
+# ============================================================
+view_git_log() {
+    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
+    layout_init
+    widget_banner "Git Log"
+    layout_spacer
+    widget_card_begin "Commit Graph (last 20)"
+    local _log
+    _log=$(git_log_graph 20)
+    if [[ -n "$_log" ]]; then
+        while IFS= read -r line; do
+            cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+            printf '  %s%s' "$line" "$RST"
+            erase_eol; layout_advance 1
+        done <<< "$_log"
+    fi
+    widget_card_end
+    layout_footer "Press any key to return..."
+    read -rsn1
+    data_cache_clear; render
+}
+
+view_sessions() {
+    [[ -n "$C_BG_PRIMARY" ]] && fill_background || screen_clear
+    layout_init
+    widget_banner "Tmux Sessions"
+    layout_spacer
+    local _all
+    _all=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)
+    if [[ -n "$_all" ]]; then
+        while IFS= read -r sess; do
+            widget_card_begin "$sess"
+            local _wins
+            _wins=$(tmux list-windows -t "$sess" -F "#{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null)
+            if [[ -n "$_wins" ]]; then
+                while IFS= read -r win; do
+                    cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+                    printf '%s%s%s' "$C_TEXT" "$win" "$RST"
+                    erase_eol; layout_advance 1
+                done <<< "$_wins"
+            fi
+            widget_card_end
+        done <<< "$_all"
+    fi
+    layout_footer "Press any key to return..."
+    read -rsn1
+    data_cache_clear; render
 }
 
 # ============================================================
 # Key bindings
 # ============================================================
-
-do_refresh() {
-    data_cache_clear
-    render
-}
-
-do_git_log() {
-    if [[ -n "$C_BG_PRIMARY" ]]; then
-        fill_background
-    else
-        screen_clear
-    fi
-    layout_init
-    layout_header "Git Log" "$(sys_datetime)"
-    layout_section "COMMIT GRAPH (last 20)"
-    layout_spacer
-
-    local log
-    log=$(git_log_graph 20)
-    if [[ -n "$log" ]]; then
-        while IFS= read -r line; do
-            cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
-            printf '  %s%s\n' "$line" "$RST"
-            layout_advance 1
-        done <<< "$log"
-    fi
-
-    layout_footer "Press any key to go back..."
-    read -rsn1
-    render
-}
-
-do_sessions() {
-    if [[ -n "$C_BG_PRIMARY" ]]; then
-        fill_background
-    else
-        screen_clear
-    fi
-    layout_init
-    layout_header "Tmux Sessions" "$(sys_datetime)"
-    layout_section "ALL SESSIONS & WINDOWS"
-    layout_spacer
-
-    tmux list-sessions -F "#{session_name}" 2>/dev/null | while IFS= read -r sess; do
-        layout_print "  ${sess}" "${BOLD}${C_SECONDARY}"
-        tmux list-windows -t "$sess" -F "    #{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null | while IFS= read -r win; do
-            layout_print "  $win" "$C_MUTED"
-        done
-    done
-
-    layout_footer "Press any key to go back..."
-    read -rsn1
-    render
-}
+do_refresh() { data_cache_clear; render; }
+do_quit()    { bus_emit_dismiss "user_quit"; input_stop; }
 
 do_theme_cycle() {
-    local themes=(catppuccin tokyonight dracula nord minimal)
-    local current_idx=0
-    for i in "${!themes[@]}"; do
-        [[ "${themes[$i]}" == "$OVERLAY_THEME" ]] && current_idx=$i
-    done
-    local next_idx=$(( (current_idx + 1) % ${#themes[@]} ))
-    OVERLAY_THEME="${themes[$next_idx]}"
+    local themes="catppuccin tokyonight dracula nord minimal"
+    local i=0 ci=0
+    for t in $themes; do [[ "$t" == "$OVERLAY_THEME" ]] && ci=$i; i=$((i+1)); done
+    local total=$i ni=$(( (ci + 1) % total ))
+    i=0; for t in $themes; do [[ $i -eq $ni ]] && OVERLAY_THEME="$t"; i=$((i+1)); done
     theme_load "$OVERLAY_THEME"
-    data_cache_clear
-    render
+    data_cache_clear; render
 }
 
-do_quit() {
-    input_stop
-}
-
-do_help() {
-    input_show_help
-    render
-}
-
-# Register bindings
-input_bind "r" "do_refresh"     "efresh"
-input_bind "g" "do_git_log"     "it log"
-input_bind "s" "do_sessions"    "essions"
-input_bind "t" "do_theme_cycle" "heme"
-input_bind "?" "do_help"        " help"
-input_bind "q" "do_quit"        "uit"
-input_bind "escape" "do_quit"   ""
-
-# ============================================================
-# Launch
-# ============================================================
+input_bind "r" "do_refresh"      "efresh"
+input_bind "g" "view_git_log"    "it log"
+input_bind "s" "view_sessions"   "essions"
+input_bind "t" "do_theme_cycle"  "heme"
+input_bind "?" "input_show_help" " help"
+input_bind "q" "do_quit"         "uit"
+input_bind "escape" "do_quit"    ""
 
 overlay_start "Terminal Dashboard" "render"

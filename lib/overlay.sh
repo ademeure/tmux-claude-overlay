@@ -16,6 +16,8 @@ source "${OVERLAY_ROOT}/lib/drawing.sh"
 source "${OVERLAY_ROOT}/lib/layout.sh"
 source "${OVERLAY_ROOT}/lib/data.sh"
 source "${OVERLAY_ROOT}/lib/input.sh"
+source "${OVERLAY_ROOT}/lib/widgets.sh"
+source "${OVERLAY_ROOT}/lib/bus.sh"
 
 # ============================================================
 # Overlay lifecycle
@@ -42,10 +44,8 @@ overlay_init() {
     # Initialize layout
     layout_init
 
-    # Draw header if title provided
-    if [[ -n "$title" ]]; then
-        layout_header "$title" "$(sys_datetime)"
-    fi
+    # Note: overlays handle their own header/banner in their render function.
+    # overlay_init just sets up the terminal — no header drawn here.
 }
 
 # Cleanup handler — restores terminal state on exit

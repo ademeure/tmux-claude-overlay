@@ -84,9 +84,25 @@ erase_eol() { printf '\033[K'; }
 # Fill the entire screen with the theme background color.
 # Call this at the start of your overlay to get a solid background.
 fill_background() {
-    local rows cols
-    rows=$(tput lines 2>/dev/null || echo 24)
-    cols=$(tput cols  2>/dev/null || echo 80)
+    # Use SCREEN_ROWS/SCREEN_COLS if available (set by layout_init),
+    # falling back to tmux pane dimensions, then tput.
+    # IMPORTANT: tput returns WRONG values inside tmux popups (reports
+    # the parent terminal size, not the popup pane size), so we must
+    # prefer tmux-based detection.
+    local rows=${SCREEN_ROWS:-0}
+    local cols=${SCREEN_COLS:-0}
+
+    if [[ $rows -eq 0 || $cols -eq 0 ]]; then
+        if [[ -n "${TMUX:-}" ]]; then
+            cols=$(tmux display-message -p '#{pane_width}' 2>/dev/null || echo 0)
+            rows=$(tmux display-message -p '#{pane_height}' 2>/dev/null || echo 0)
+        fi
+    fi
+    if [[ $rows -eq 0 || $cols -eq 0 ]]; then
+        rows=$(tput lines 2>/dev/null || echo 24)
+        cols=$(tput cols  2>/dev/null || echo 80)
+    fi
+
     local blank
     blank=$(printf '%*s' "$cols" '')
 

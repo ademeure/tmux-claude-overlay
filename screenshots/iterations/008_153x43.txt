@@ -1,0 +1,43 @@
+
+
+                                                                   Terminal Dashboard
+                                                                  Sun Apr 05, 16:09:47
+
+  Branch                        Sessions                      Panes                         Load
+  main                          39                            1                             10.30 6.84 6.00
+
+  ╭─ Git ──────────────────────────────────────────────────────────────────╮ ╭─ System ───────────────────────────────────────────────────────────────╮
+  │ Status         ● clean                                                 │ │ Directory      ~/tmux-claude-overlay                                   │
+  │ Last commit    8 minutes ago                                           │ │ Hostname       Arouns-MacBook-Pro                                      │
+  │ Remote         ↑0 ↓0                                                   │ │ Uptime         up 1 day                                                │
+  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │ │ Disk           2%                                                      │
+  │ 96b045e Fix footer/card collision, right column width, and multi-si…   │ │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+  │ 9426520 Add Claude Code skills, architecture docs, and future direc…   │ │ Active Panes                                                           │
+  │ c58b849 Visual polish: card-aware content padding, tighter layout, …   │ │ 0: zsh 153x43 (active)                                                 │
+  │ 501aec4 Add widget library, message bus, and major visual overhaul     │ │                                                                        │
+  │ 647e3f0 Initial framework: overlay system with themes, drawing, lay…   │ │                                                                        │
+  ╰────────────────────────────────────────────────────────────────────────╯ ╰────────────────────────────────────────────────────────────────────────╯
+
+  ╭─ Sessions ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ <bin> STT                  1 win ✦                                                                                                                │
+  │ <bin> python server        1 win ✦                                                                                                                │
+  │ <cli> STT                  1 win                                                                                                                  │
+  │ <cli> home 23              1 win                                                                                                                  │
+  │ <cli> home 37              1 win                                                                                                                  │
+  │ <cli> home 41              1 win ✦                                                                                                                │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+  ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [r]efresh  [g]it log  [s]essions  [t]heme  [?] help  [q]uit                                                                               catppuccin
+
+
+
+
+
+
+
+
+
+
+
+

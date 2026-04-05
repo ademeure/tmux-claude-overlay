@@ -45,28 +45,31 @@ render() {
         _render_narrow
     fi
 
-    layout_spacer
+    # Footer needs 2 rows (separator + bar). Cards need 2 rows (top + bottom border).
+    # Only render sessions if we have room for card + at least 1 content row + footer.
+    local footer_rows=2
+    local rows_left=$((SCREEN_ROWS - _LAYOUT_CURSOR_ROW - footer_rows))
 
-    # Sessions card (always full width)
-    # Reserve 4 rows for card borders (2) + footer separator + footer bar
-    local max_content_row=$((SCREEN_ROWS - 4))
-    widget_card_begin "Sessions"
-    if [[ -n "$_sess_data" ]]; then
-        while IFS='|' read -r sess wins att; do
-            # Stop if we'd overflow into footer space
-            [[ $_LAYOUT_CURSOR_ROW -ge $max_content_row ]] && break
-            local marker=""
-            [[ "$att" == "1" ]] && marker=" ✦"
-            local line
-            line=$(printf '%s%-26s%s %s%s win%s%s' \
-                "$C_SECONDARY" "$sess" "$RST" \
-                "$C_MUTED" "$wins" "$C_SUCCESS" "$marker")
-            cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
-            card_print "$line"
-            layout_advance 1
-        done <<< "$_sess_data"
+    if [[ $rows_left -ge 4 ]]; then
+        layout_spacer
+        local max_content_row=$((SCREEN_ROWS - footer_rows - 2))
+        widget_card_begin "Sessions"
+        if [[ -n "$_sess_data" ]]; then
+            while IFS='|' read -r sess wins att; do
+                [[ $_LAYOUT_CURSOR_ROW -ge $max_content_row ]] && break
+                local marker=""
+                [[ "$att" == "1" ]] && marker=" ✦"
+                local line
+                line=$(printf '%s%-26s%s %s%s win%s%s' \
+                    "$C_SECONDARY" "$sess" "$RST" \
+                    "$C_MUTED" "$wins" "$C_SUCCESS" "$marker")
+                cursor_to "$_LAYOUT_CURSOR_ROW" "$_LAYOUT_CURSOR_COL"
+                card_print "$line"
+                layout_advance 1
+            done <<< "$_sess_data"
+        fi
+        widget_card_end
     fi
-    widget_card_end
 
     layout_footer "$(input_hint_string)" "$OVERLAY_THEME"
 }
@@ -77,6 +80,7 @@ render() {
 _render_wide() {
     local gap=1
     local half=$(( (SCREEN_INNER_COLS - gap) / 2 ))
+    local right_half=$((SCREEN_INNER_COLS - half - gap))
     local save_row=$_LAYOUT_CURSOR_ROW
     local left_col=$_LAYOUT_CURSOR_COL
     local right_col=$((_LAYOUT_CURSOR_COL + half + gap))
@@ -121,7 +125,7 @@ _render_wide() {
     _LAYOUT_CURSOR_ROW=$save_row
     _LAYOUT_CURSOR_COL=$right_col
 
-    widget_card_begin "System" "$half"
+    widget_card_begin "System" "$right_half"
 
     card_kv "Directory" "$_pane_path" "$C_PRIMARY"
     card_kv "Hostname" "$_hostname"

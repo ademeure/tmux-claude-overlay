@@ -1,0 +1,30 @@
+
+
+                                         Terminal Dashboard
+                                        Sun Apr 05, 15:58:29
+
+  Branch                  Sessions                Panes                   Load
+  main                    40                      1                       6.53 6.00 5.66
+
+  ╭─ Git ───────────────────────────────────────╮ ╭─ System ────────────────────────────────────╮
+  │ Status         ◐ 1 changed                  │ │ Directory      ~/tmux-claude-overlay        │
+  │ Last commit    4 minutes ago                │ │ Hostname       Arouns-MacBook-Pro           │
+  │ Remote         ↑0 ↓0                        │ │ Uptime         up 1 day                     │
+  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │ │ Disk           2%                           │
+  │ 9426520 Add Claude Code skills, architec…   │ │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+  │ c58b849 Visual polish: card-aware conten…   │ │ Active Panes                                │
+  │ 501aec4 Add widget library, message bus,…   │ │ 0: zsh 100x30 (active)                      │
+  │ 647e3f0 Initial framework: overlay syste…   │ │                                             │
+  ╰─────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+  ╭─ Sessions ───────────────────────────────────────────────────────────────────────────────────╮
+  │ [global] Claude Code       1 win                                                             │
+  │ [global] iTerm CTRL+C      1 win                                                             │
+  │ [global] iTerm fonts       1 win                                                             │
+  │ [global] iTerm shortcuts   1 win                                                             │
+  │ [global] karabiner mux     1 win ✦                                                           │
+  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────
+  [r]efresh  [g]it log  [s]essions  [t]heme  [?] help  [q]uit                          catppuccin
+

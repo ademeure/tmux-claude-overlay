@@ -175,23 +175,38 @@ layout_min_height() {
 layout_footer() {
     local left="$1" right="${2:-}"
 
-    # Draw footer at the bottom, but no more than 2 rows below content.
-    # This avoids a huge gap when content is short.
-    local min_sep=$((_LAYOUT_CURSOR_ROW + 1))
-    local max_sep=$((SCREEN_ROWS - 2))
-    local sep_row=$min_sep
-    [[ $sep_row -gt $max_sep ]] && sep_row=$max_sep
-    local bar_row=$((sep_row + 1))
+    # Place footer: prefer 1 blank row after content, but clamp to screen.
+    # If tight on space, skip the separator and just draw the keybind bar.
+    local ideal_sep=$((_LAYOUT_CURSOR_ROW + 1))
+    local max_bar=$((SCREEN_ROWS))     # bar on the very last row at most
+    local bar_row sep_row
 
-    # Separator line
-    cursor_to "$sep_row" 1
-    printf '%s' "$C_BG_PRIMARY"
-    local i
-    for ((i=0; i<SCREEN_COLS; i++)); do printf '%s' " "; done
-    cursor_to "$sep_row" $((1 + LAYOUT_PAD_LEFT))
-    printf '%s' "$THEME_BORDER"
-    for ((i=0; i<SCREEN_INNER_COLS; i++)); do printf '%s' "─"; done
-    printf '%s' "$RST"
+    if [[ $ideal_sep -le $((max_bar - 1)) ]]; then
+        # Room for separator + bar
+        sep_row=$ideal_sep
+        bar_row=$((sep_row + 1))
+        # Clamp: bar must be <= SCREEN_ROWS
+        if [[ $bar_row -gt $max_bar ]]; then
+            bar_row=$max_bar
+            sep_row=$((bar_row - 1))
+        fi
+    else
+        # Tight: just draw bar on last row, no separator
+        bar_row=$max_bar
+        sep_row=0  # skip separator
+    fi
+
+    # Separator line (if we have room)
+    if [[ $sep_row -gt 0 ]]; then
+        cursor_to "$sep_row" 1
+        printf '%s' "$C_BG_PRIMARY"
+        local i
+        for ((i=0; i<SCREEN_COLS; i++)); do printf '%s' " "; done
+        cursor_to "$sep_row" $((1 + LAYOUT_PAD_LEFT))
+        printf '%s' "$THEME_BORDER"
+        for ((i=0; i<SCREEN_INNER_COLS; i++)); do printf '%s' "─"; done
+        printf '%s' "$RST"
+    fi
 
     # Footer bar
     cursor_to "$bar_row" 1

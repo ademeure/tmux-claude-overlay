@@ -1,0 +1,24 @@
+
+
+                               Terminal Dashboard
+                              Sun Apr 05, 16:00:12
+
+  Branch             Sessions           Panes              Load
+  main               36                 1                  5.49 5.85 5.64
+
+  ╭─ Git ────────────────────────────────────────────────────────────────────╮
+  │ Status         ◐ 8 changed                                               │
+  │ Last commit    6 minutes ago                                             │
+  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+  │ 9426520 Add Claude Code skills, architecture docs, and future directi…   │
+  │ c58b849 Visual polish: card-aware content padding, tighter layout, ov…   │
+  │ 501aec4 Add widget library, message bus, and major visual overhaul       │
+  ╰──────────────────────────────────────────────────────────────────────────╯
+
+  ╭─ System ─────────────────────────────────────────────────────────────────╮
+  │ Directory      ~/tmux-claude-overlay                                     │
+  │ Uptime         up 1 day                                                  │
+  │ Load           5.49 5.85 5.64                                            │
+  ────────────────────────────────────────────────────────────────────────────
+  [r]efresh  [g]it log  [s]essions  [t]heme  [?] help  [q]uit      catppuccin
+

@@ -1,0 +1,40 @@
+
+
+                                              Terminal Dashboard
+                                             Sun Apr 05, 15:57:09
+
+  Branch                    Sessions                  Panes                     Load
+  main                      36                        1                         6.63 5.95 5.62
+
+  ╭─ Git ────────────────────────────────────────────╮ ╭─ System ─────────────────────────────────────────╮
+  │ Status         ● clean                           │ │ Directory      ~/tmux-claude-overlay             │
+  │ Last commit    2 minutes ago                     │ │ Hostname       Arouns-MacBook-Pro                │
+  │ Remote         ↑0 ↓0                             │ │ Uptime         up 1 day                          │
+  │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │ │ Disk           2%                                │
+  │ 9426520 Add Claude Code skills, architecture …   │ │ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ │
+  │ c58b849 Visual polish: card-aware content pad…   │ │ Active Panes                                     │
+  │ 501aec4 Add widget library, message bus, and …   │ │ 0: zsh 110x40 (active)                           │
+  │ 647e3f0 Initial framework: overlay system wit…   │ │                                                  │
+  ╰──────────────────────────────────────────────────╯ ╰──────────────────────────────────────────────────╯
+
+  ╭─ Sessions ─────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ [global] Claude Code       1 win                                                                       │
+  │ [global] iTerm CTRL+C      1 win                                                                       │
+  │ [global] iTerm fonts       1 win                                                                       │
+  │ [global] iTerm shortcuts   1 win                                                                       │
+  │ [global] karabiner mux     1 win ✦                                                                     │
+  │ [global] mouse cursor      1 win ✦                                                                     │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [r]efresh  [g]it log  [s]essions  [t]heme  [?] help  [q]uit                                    catppuccin
+
+
+
+
+
+
+
+
+
+

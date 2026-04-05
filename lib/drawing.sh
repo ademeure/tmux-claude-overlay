@@ -84,36 +84,11 @@ erase_eol() { printf '\033[K'; }
 # Fill the entire screen with the theme background color.
 # Call this at the start of your overlay to get a solid background.
 fill_background() {
-    # Use SCREEN_ROWS/SCREEN_COLS if available (set by layout_init),
-    # falling back to tmux pane dimensions, then tput.
-    # IMPORTANT: tput returns WRONG values inside tmux popups (reports
-    # the parent terminal size, not the popup pane size), so we must
-    # prefer tmux-based detection.
-    local rows=${SCREEN_ROWS:-0}
-    local cols=${SCREEN_COLS:-0}
-
-    if [[ $rows -eq 0 || $cols -eq 0 ]]; then
-        if [[ -n "${TMUX:-}" ]]; then
-            cols=$(tmux display-message -p '#{pane_width}' 2>/dev/null || echo 0)
-            rows=$(tmux display-message -p '#{pane_height}' 2>/dev/null || echo 0)
-        fi
-    fi
-    if [[ $rows -eq 0 || $cols -eq 0 ]]; then
-        rows=$(tput lines 2>/dev/null || echo 24)
-        cols=$(tput cols  2>/dev/null || echo 80)
-    fi
-
-    local blank
-    blank=$(printf '%*s' "$cols" '')
-
-    printf '%s' "${C_BG_PRIMARY}"
-    cursor_to 1 1
-    local i
-    for ((i=1; i<=rows; i++)); do
-        cursor_to "$i" 1
-        printf '%s' "$blank"
-    done
-    cursor_to 1 1
+    # Set background color and clear screen. The terminal's native clear
+    # (\033[2J) fills with the current background color and always uses
+    # the correct pane dimensions — no manual size detection needed.
+    # This avoids the tput-in-popup bug where tput returns wrong sizes.
+    printf '%s\033[2J\033[H' "${C_BG_PRIMARY}"
 }
 
 # ============================================================
